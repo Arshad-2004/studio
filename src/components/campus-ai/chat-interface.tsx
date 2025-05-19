@@ -2,14 +2,16 @@
 "use client";
 
 import type { Message } from '@/types';
-import { useState, useEffect, useRef } from 'react';
-import { Bot, User, Send, Mic, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Bot, User, Send, Mic, Loader2, RefreshCw, Sun, Moon } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { handleUserMessage } from '@/lib/actions/chat.actions';
-import { Card, CardFooter } from '@/components/ui/card';
+import { Card, CardFooter, CardHeader } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import ChatMessageItem from './chat-message-item';
 import TypingIndicator from './typing-indicator';
 import { useToast } from '@/hooks/use-toast';
@@ -26,9 +28,30 @@ export default function ChatInterface() {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (storedTheme) {
+      setTheme(storedTheme);
+      document.documentElement.classList.toggle('dark', storedTheme === 'dark');
+    } else {
+      // Default to dark if no preference or if system prefers dark
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(prefersDark ? 'dark' : 'light');
+      document.documentElement.classList.toggle('dark', prefersDark);
+    }
+  }, []);
+
+  const handleThemeToggle = (isDark: boolean) => {
+    const newTheme = isDark ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.classList.toggle('dark', isDark);
+  };
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -38,6 +61,21 @@ export default function ChatInterface() {
       }
     }
   }, [messages]);
+
+  const handleResetChat = useCallback(() => {
+    setMessages([welcomeMessage]);
+    setInputValue('');
+    setIsLoading(false);
+    if (isListening && speechRecognitionRef.current) {
+      speechRecognitionRef.current.stop();
+    }
+    setIsListening(false);
+    toast({
+      title: "Chat Reset",
+      description: "The conversation has been cleared.",
+    });
+  }, [isListening, toast]);
+
 
   const handleSubmit = async () => {
     const query = inputValue.trim();
@@ -65,9 +103,10 @@ export default function ChatInterface() {
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
       console.error("Failed to get AI response:", error);
+      const errorMessageText = error instanceof Error ? error.message : "Sorry, I encountered an error. Please try again.";
       const errorMessage: Message = {
         id: uuidv4(),
-        text: "Sorry, I encountered an error. Please try again.",
+        text: errorMessageText,
         sender: 'ai',
         timestamp: new Date(),
       };
@@ -99,65 +138,55 @@ export default function ChatInterface() {
     } else {
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(() => {
-          // Initialize SpeechRecognition instance if it doesn't exist or was cleared
           if (!speechRecognitionRef.current) {
             speechRecognitionRef.current = new SpeechRecognitionAPI();
             const recognition = speechRecognitionRef.current;
             
-            recognition.continuous = false; // Stop after one utterance
-            recognition.interimResults = false; // We only want final results
-            recognition.lang = 'en-US'; // You can make this configurable
+            recognition.continuous = false; 
+            recognition.interimResults = false; 
+            recognition.lang = 'en-US'; 
 
             recognition.onstart = () => {
               setIsListening(true);
-              setInputValue(''); // Clear input when listening starts
+              setInputValue(''); 
               toast({ title: "Listening...", description: "Speak now.", duration: 5000 });
             };
 
             recognition.onresult = (event: SpeechRecognitionEvent) => {
               const transcript = event.results[0][0].transcript;
               setInputValue(transcript);
-              // Optional: auto-submit after transcription
-              // if (transcript.trim()) {
-              //   handleSubmit();
-              // }
             };
 
             recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
               console.error("Speech recognition error", event.error, event.message);
-              let errorMessage = `An unknown speech error occurred: ${event.error}.`;
+              let errorMessageText = `An unknown speech error occurred: ${event.error}.`;
               if (event.error === 'no-speech') {
-                errorMessage = "No speech was detected. Please try again.";
+                errorMessageText = "No speech was detected. Please try again.";
               } else if (event.error === 'audio-capture') {
-                errorMessage = "Audio capture failed. Ensure your microphone is working and allowed.";
+                errorMessageText = "Audio capture failed. Ensure your microphone is working and allowed.";
               } else if (event.error === 'not-allowed') {
-                errorMessage = "Microphone access denied. Please enable it in your browser settings.";
+                errorMessageText = "Microphone access denied. Please enable it in your browser settings.";
               } else if (event.error === 'network') {
-                errorMessage = "A network error occurred during speech recognition.";
+                errorMessageText = "A network error occurred during speech recognition.";
               }
               toast({
                 title: "Speech Error",
-                description: errorMessage,
+                description: errorMessageText,
                 variant: "destructive",
               });
-              setIsListening(false); // Ensure listening state is reset
-              speechRecognitionRef.current = null; // Clear ref on critical error to force re-initialization
+              setIsListening(false); 
+              speechRecognitionRef.current = null; 
             };
 
             recognition.onend = () => {
               setIsListening(false);
-              // If speechRecognitionRef.current errored out and was set to null, this will prevent errors.
-              // Otherwise, the instance remains for potential reuse.
             };
           }
           
-          // Start recognition if the instance exists and is not already listening
           if (speechRecognitionRef.current && !isListening) {
             try {
               speechRecognitionRef.current.start();
             } catch (e: any) {
-              // Catch errors if start() is called on an already started/invalid state.
-              // This might happen if state updates are tricky.
               console.error("Error trying to start recognition:", e.message);
               toast({
                 title: "Mic Error",
@@ -165,7 +194,7 @@ export default function ChatInterface() {
                 variant: "destructive",
               });
               setIsListening(false);
-              speechRecognitionRef.current = null; // Reset instance on such error
+              speechRecognitionRef.current = null; 
             }
           }
         })
@@ -183,7 +212,7 @@ export default function ChatInterface() {
             variant: "destructive",
           });
           setIsListening(false);
-          speechRecognitionRef.current = null; // Clear ref on permission error
+          speechRecognitionRef.current = null; 
         });
     }
   };
@@ -191,6 +220,30 @@ export default function ChatInterface() {
 
   return (
     <Card className="w-full max-w-2xl h-[70vh] md:h-[80vh] shadow-2xl flex flex-col bg-card/80 backdrop-blur-sm border-border/50 animate-fade-in-up animation-delay-400">
+      <CardHeader className="p-4 border-b border-border/50 flex flex-row justify-between items-center">
+        <h2 className="text-lg font-semibold text-foreground">CollegeGPT Chat</h2>
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleResetChat} 
+            aria-label="Reset Chat"
+            className="text-muted-foreground hover:text-primary"
+          >
+            <RefreshCw className="w-5 h-5" />
+          </Button>
+          <div className="flex items-center space-x-1">
+            <Sun className={`w-5 h-5 ${theme === 'light' ? 'text-primary' : 'text-muted-foreground'}`} />
+            <Switch
+              id="theme-toggle"
+              checked={theme === 'dark'}
+              onCheckedChange={handleThemeToggle}
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            />
+            <Moon className={`w-5 h-5 ${theme === 'dark' ? 'text-primary' : 'text-muted-foreground'}`} />
+          </div>
+        </div>
+      </CardHeader>
       <ScrollArea className="flex-grow p-4 md:p-6" ref={scrollAreaRef}>
         <div className="space-y-4">
           {messages.map((msg) => (
@@ -207,7 +260,7 @@ export default function ChatInterface() {
             size="icon" 
             className={`flex-shrink-0 ${isListening ? 'text-primary animate-pulse' : 'text-muted-foreground hover:text-primary'}`} 
             onClick={handleMicClick}
-            disabled={isLoading} // Disable mic if main loading is happening
+            disabled={isLoading} 
             aria-label={isListening ? "Stop listening" : "Use Microphone"}
             aria-pressed={isListening}
           >
@@ -225,7 +278,7 @@ export default function ChatInterface() {
                 handleSubmit();
               }
             }}
-            disabled={isLoading || isListening} // Disable textarea if loading or listening
+            disabled={isLoading || isListening} 
             aria-label="Chat input"
           />
           <Button 
