@@ -82,13 +82,54 @@ export default {
   				to: {
   					height: '0'
   				}
-  			}
+  			},
+        'fade-in-up': {
+          '0%': {
+            opacity: '0',
+            transform: 'translateY(20px)'
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'translateY(0)'
+          },
+        },
+        'pulse-dot': { // Renamed to avoid conflict with Tailwind's default pulse
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
+        }
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
-  		}
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+        'fade-in-up': 'fade-in-up 0.5s ease-out forwards',
+        'pulse': 'pulse-dot 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite', // Use the renamed keyframe
+  		},
+      animationDelay: { // Custom animation delays
+        '150': '0.15s',
+        '200': '0.2s',
+        '300': '0.3s',
+        '400': '0.4s',
+      }
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    function({ addUtilities, theme }: { addUtilities: Function, theme: Function }) {
+      const newUtilities = {
+        '.animation-delay-150': {
+          'animation-delay': theme('animationDelay.150'),
+        },
+        '.animation-delay-200': {
+          'animation-delay': theme('animationDelay.200'),
+        },
+        '.animation-delay-300': {
+          'animation-delay': theme('animationDelay.300'),
+        },
+        '.animation-delay-400': {
+          'animation-delay': theme('animationDelay.400'),
+        },
+      }
+      addUtilities(newUtilities, ['responsive', 'hover'])
+    }
+  ],
 } satisfies Config;
