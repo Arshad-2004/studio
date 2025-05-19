@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Message } from '@/types';
@@ -5,14 +6,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Bot, User, Send, Mic, Loader2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { handleUserMessage } from '@/lib/actions/chat.actions';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Card, CardFooter } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessageItem from './chat-message-item';
 import TypingIndicator from './typing-indicator';
 import { useToast } from '@/hooks/use-toast';
-
 
 const welcomeMessage: Message = {
   id: uuidv4(),
@@ -25,7 +25,9 @@ export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -37,10 +39,9 @@ export default function ChatInterface() {
     }
   }, [messages]);
 
-  const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
-    if (e) e.preventDefault();
+  const handleSubmit = async () => {
     const query = inputValue.trim();
-    if (!query || isLoading) return;
+    if (!query || isLoading || isListening) return;
 
     const userMessage: Message = {
       id: uuidv4(),
@@ -81,6 +82,113 @@ export default function ChatInterface() {
     }
   };
 
+  const handleMicClick = () => {
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognitionAPI) {
+      toast({
+        title: "Unsupported Feature",
+        description: "Speech recognition is not supported in your browser.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isListening && speechRecognitionRef.current) {
+      speechRecognitionRef.current.stop();
+    } else {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => {
+          // Initialize SpeechRecognition instance if it doesn't exist or was cleared
+          if (!speechRecognitionRef.current) {
+            speechRecognitionRef.current = new SpeechRecognitionAPI();
+            const recognition = speechRecognitionRef.current;
+            
+            recognition.continuous = false; // Stop after one utterance
+            recognition.interimResults = false; // We only want final results
+            recognition.lang = 'en-US'; // You can make this configurable
+
+            recognition.onstart = () => {
+              setIsListening(true);
+              setInputValue(''); // Clear input when listening starts
+              toast({ title: "Listening...", description: "Speak now.", duration: 5000 });
+            };
+
+            recognition.onresult = (event: SpeechRecognitionEvent) => {
+              const transcript = event.results[0][0].transcript;
+              setInputValue(transcript);
+              // Optional: auto-submit after transcription
+              // if (transcript.trim()) {
+              //   handleSubmit();
+              // }
+            };
+
+            recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+              console.error("Speech recognition error", event.error, event.message);
+              let errorMessage = `An unknown speech error occurred: ${event.error}.`;
+              if (event.error === 'no-speech') {
+                errorMessage = "No speech was detected. Please try again.";
+              } else if (event.error === 'audio-capture') {
+                errorMessage = "Audio capture failed. Ensure your microphone is working and allowed.";
+              } else if (event.error === 'not-allowed') {
+                errorMessage = "Microphone access denied. Please enable it in your browser settings.";
+              } else if (event.error === 'network') {
+                errorMessage = "A network error occurred during speech recognition.";
+              }
+              toast({
+                title: "Speech Error",
+                description: errorMessage,
+                variant: "destructive",
+              });
+              setIsListening(false); // Ensure listening state is reset
+              speechRecognitionRef.current = null; // Clear ref on critical error to force re-initialization
+            };
+
+            recognition.onend = () => {
+              setIsListening(false);
+              // If speechRecognitionRef.current errored out and was set to null, this will prevent errors.
+              // Otherwise, the instance remains for potential reuse.
+            };
+          }
+          
+          // Start recognition if the instance exists and is not already listening
+          if (speechRecognitionRef.current && !isListening) {
+            try {
+              speechRecognitionRef.current.start();
+            } catch (e: any) {
+              // Catch errors if start() is called on an already started/invalid state.
+              // This might happen if state updates are tricky.
+              console.error("Error trying to start recognition:", e.message);
+              toast({
+                title: "Mic Error",
+                description: "Could not start microphone. Please try again.",
+                variant: "destructive",
+              });
+              setIsListening(false);
+              speechRecognitionRef.current = null; // Reset instance on such error
+            }
+          }
+        })
+        .catch(err => {
+          console.error("Microphone permission error: ", err);
+          let description = "Could not access microphone. Please grant permission.";
+          if (err.name === "NotAllowedError") {
+            description = "Microphone permission was denied. Please enable it in your browser settings.";
+          } else if (err.name === "NotFoundError") {
+            description = "No microphone was found. Please ensure one is connected and enabled.";
+          }
+          toast({
+            title: "Microphone Error",
+            description: description,
+            variant: "destructive",
+          });
+          setIsListening(false);
+          speechRecognitionRef.current = null; // Clear ref on permission error
+        });
+    }
+  };
+
+
   return (
     <Card className="w-full max-w-2xl h-[70vh] md:h-[80vh] shadow-2xl flex flex-col bg-card/80 backdrop-blur-sm border-border/50 animate-fade-in-up animation-delay-400">
       <ScrollArea className="flex-grow p-4 md:p-6" ref={scrollAreaRef}>
@@ -92,14 +200,23 @@ export default function ChatInterface() {
         </div>
       </ScrollArea>
       <CardFooter className="p-4 md:p-6 border-t border-border/50">
-        <form onSubmit={handleSubmit} className="flex items-center w-full gap-2">
-          <Button type="button" variant="ghost" size="icon" className="text-muted-foreground hover:text-primary flex-shrink-0" disabled={isLoading} aria-label="Use Microphone">
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex items-center w-full gap-2">
+          <Button 
+            type="button" 
+            variant="ghost" 
+            size="icon" 
+            className={`flex-shrink-0 ${isListening ? 'text-primary animate-pulse' : 'text-muted-foreground hover:text-primary'}`} 
+            onClick={handleMicClick}
+            disabled={isLoading} // Disable mic if main loading is happening
+            aria-label={isListening ? "Stop listening" : "Use Microphone"}
+            aria-pressed={isListening}
+          >
             <Mic className="w-5 h-5" />
           </Button>
           <Textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask CollegeGPT anything..."
+            placeholder={isListening ? "Listening..." : "Ask CollegeGPT anything..."}
             className="flex-grow resize-none focus-visible:ring-1 focus-visible:ring-primary/80 bg-input/50 placeholder:text-muted-foreground/80"
             rows={1}
             onKeyDown={(e) => {
@@ -108,10 +225,17 @@ export default function ChatInterface() {
                 handleSubmit();
               }
             }}
-            disabled={isLoading}
+            disabled={isLoading || isListening} // Disable textarea if loading or listening
             aria-label="Chat input"
           />
-          <Button type="submit" variant="default" size="icon" disabled={isLoading || !inputValue.trim()} className="flex-shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground" aria-label="Send Message">
+          <Button 
+            type="submit" 
+            variant="default" 
+            size="icon" 
+            disabled={isLoading || isListening || !inputValue.trim()} 
+            className="flex-shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground" 
+            aria-label="Send Message"
+          >
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </Button>
         </form>
