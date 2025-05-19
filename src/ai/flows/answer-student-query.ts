@@ -1,3 +1,4 @@
+
 // Use server directive is required for Genkit flows.
 'use server';
 
@@ -16,13 +17,13 @@ import {z} from 'genkit';
 
 // Define the input schema for the student's question.
 const AnswerStudentQueryInputSchema = z.object({
-  query: z.string().describe('The student’s question about college life, admissions, financial aid, etc.'),
+  query: z.string().describe('The student’s question or command about college life, admissions, financial aid, etc.'),
 });
 export type AnswerStudentQueryInput = z.infer<typeof AnswerStudentQueryInputSchema>;
 
 // Define the output schema for the chatbot's answer.
 const AnswerStudentQueryOutputSchema = z.object({
-  answer: z.string().describe('The chatbot’s helpful and informative answer to the student’s question.'),
+  answer: z.string().describe('The chatbot’s helpful and informative answer to the student’s query or command execution result.'),
 });
 export type AnswerStudentQueryOutput = z.infer<typeof AnswerStudentQueryOutputSchema>;
 
@@ -36,11 +37,13 @@ const answerStudentQueryPrompt = ai.definePrompt({
   name: 'answerStudentQueryPrompt',
   input: {schema: AnswerStudentQueryInputSchema},
   output: {schema: AnswerStudentQueryOutputSchema},
-  prompt: `You are a helpful AI assistant that answers student questions about college.
+  prompt: `You are CollegeGPT, an AI-powered guide for college life. Your role is to assist students by answering their questions and performing tasks based on their commands.
+This includes providing information on admissions, scholarships, campus life, course selection, and more.
+When a user gives you a query, understand if it's a question to be answered or a command to perform (e.g., "search for marketing programs", "list top 5 universities for computer science", "explain financial aid options"). Respond clearly, directly, and conversationally.
 
-  Question: {{{query}}}
+User Query: {{{query}}}
 
-  Answer:`, // Use Handlebars syntax to access the query.
+Your Response:`,
 });
 
 // Define the Genkit flow for answering student queries.
@@ -57,3 +60,4 @@ const answerStudentQueryFlow = ai.defineFlow(
     return output!;
   }
 );
+
