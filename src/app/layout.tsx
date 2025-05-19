@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'; // Using Inter as a fallback, Geist is
 import { Geist } from 'next/font/google';
 import { Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster"; // Added Toaster
+import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'CampusAI', // Updated title
+  title: 'CollegeGPT', // Updated title
   description: 'Your AI-Powered Guide to College Life',
 };
 

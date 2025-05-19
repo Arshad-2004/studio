@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const welcomeMessage: Message = {
   id: uuidv4(),
-  text: "Hey! I’m your AI-powered assistant for all things college — from applications to scholarships to student hacks. Ask me anything!",
+  text: "Hey! I’m CollegeGPT, your AI-powered assistant for all things college — from applications to scholarships to student hacks. Ask me anything!",
   sender: 'ai',
   timestamp: new Date(),
 };
@@ -99,7 +99,7 @@ export default function ChatInterface() {
           <Textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask me anything about college..."
+            placeholder="Ask CollegeGPT anything..."
             className="flex-grow resize-none focus-visible:ring-1 focus-visible:ring-primary/80 bg-input/50 placeholder:text-muted-foreground/80"
             rows={1}
             onKeyDown={(e) => {

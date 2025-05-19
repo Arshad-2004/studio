@@ -8,42 +8,43 @@ body {
 
 @layer base {
   :root {
-    --background: 210 29% 24%; /* #2C3E50 */
-    --foreground: 210 15% 90%; /* #DCE1E4 - Light Gray/Off-white for text */
+    /* Deep Dark Blue/Purple Theme */
+    --background: 225 25% 12%; /* Dark Desaturated Blue/Purple */
+    --foreground: 210 20% 90%; /* Light Gray for text */
 
-    --card: 210 29% 27%; /* #31465B - Slightly lighter than background */
-    --card-foreground: 210 15% 90%; /* Same as foreground */
+    --card: 225 25% 16%; /* Slightly Lighter Dark Blue/Purple */
+    --card-foreground: 210 20% 90%;
 
-    --popover: 210 29% 22%; /* #263645 - Slightly darker than background */
-    --popover-foreground: 210 15% 90%; /* Same as foreground */
+    --popover: 225 25% 10%; /* Darker for Popovers */
+    --popover-foreground: 210 20% 90%;
 
-    --primary: 207 68% 53%; /* #3498DB - Vibrant Blue */
-    --primary-foreground: 210 40% 98%; /* Almost white for text on primary */
+    --primary: 200 85% 60%; /* Bright Cyan/Blue */
+    --primary-foreground: 225 25% 10%; /* Dark text on primary */
 
-    --secondary: 210 25% 35%; /* #4A6075 - Muted blue-gray */
-    --secondary-foreground: 210 15% 90%; /* Same as foreground */
+    --secondary: 225 20% 25%; /* Muted Blue/Purple */
+    --secondary-foreground: 210 20% 85%;
 
-    --muted: 210 25% 30%; /* #3D5166 - More muted blue-gray */
-    --muted-foreground: 210 15% 70%; /* #AAB8C2 - Dimmer white/gray */
+    --muted: 225 15% 30%; /* More Muted Blue/Purple */
+    --muted-foreground: 210 15% 65%; /* Dimmer Gray */
 
-    --accent: 26 80% 52%; /* #E67E22 - Contrasting Orange */
-    --accent-foreground: 26 80% 98%; /* Almost white for text on accent, light orange/white */
+    --accent: 280 70% 65%; /* Vibrant Purple/Magenta for accent */
+    --accent-foreground: 210 20% 95%; /* Light text on accent */
 
-    --destructive: 0 70% 50%; /* Standard Red */
+    --destructive: 0 65% 55%; /* Standard Red */
     --destructive-foreground: 0 0% 98%; /* Almost white */
 
-    --border: 210 20% 30%; /* #3A4B5C - Border color */
-    --input: 210 20% 32%; /* #3F5368 - Input background */
-    --ring: 207 70% 65%; /* Ring color - Lighter shade of primary */
+    --border: 225 20% 22%; /* Border color - subtle */
+    --input: 225 20% 20%; /* Input background - subtle contrast */
+    --ring: 200 80% 70%; /* Ring color - Lighter shade of primary */
 
-    --radius: 0.5rem;
+    --radius: 0.75rem; /* Slightly more rounded for Gen-Z feel */
 
-    /* Chart colors can remain default or be adjusted if charts are used */
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Chart colors - can be updated if charts are used, for now, keep similar to new theme */
+    --chart-1: 200 70% 50%;
+    --chart-2: 280 60% 55%;
+    --chart-3: 180 70% 45%;
+    --chart-4: 300 65% 60%;
+    --chart-5: 220 75% 55%;
 
     /* Sidebar variables - kept for completeness but not used in this app */
     --sidebar-background: 240 5.9% 10%;
@@ -66,5 +67,7 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    /* Optional: Add a subtle gradient background for a more dynamic feel */
+    /* background-image: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(225 25% 8%) 100%); */
   }
 }

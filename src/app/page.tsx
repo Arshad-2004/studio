@@ -5,7 +5,7 @@ export default function Home() {
     <main className="flex flex-col items-center justify-center min-h-screen p-4 selection:bg-primary/40 selection:text-primary-foreground">
       <div className="text-center mb-8">
         <h1 className="text-4xl md:text-5xl font-bold text-primary animate-fade-in-up">
-          CampusAI
+          CollegeGPT
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground mt-2 animate-fade-in-up animation-delay-200">
           Your AI-Powered Guide to College Life
@@ -16,9 +16,8 @@ export default function Home() {
   );
 }
 
-// Add some basic animations to globals.css if they don't exist
-// or Tailwind config if preferred for keyframes
-// For simplicity, if globals.css is modified for keyframes:
+// Keyframes and animation utilities are defined in tailwind.config.ts and globals.css
+// Example (already in tailwind.config.ts or globals.css):
 /*
 @layer utilities {
   .animation-delay-200 {
